@@ -75,4 +75,36 @@ const createBook = async (title, publicationYear, authorIds, quantity = 1) => {
     }
 };
 
-module.exports = { fetchBooksFromDatabase, fetchBookById, createBook  };
+const updateBook = async (bookId, title, publicationYear, authorIds) => {
+    const connection = db.promise();
+    try {
+        await connection.beginTransaction();
+        
+        // Update the book details
+        await connection.query(
+            'UPDATE livres SET titre = ?, annee_publication = ? WHERE id = ?',
+            [title, publicationYear, bookId]
+        );
+
+        // Remove existing author associations
+        await connection.query('DELETE FROM auteur_livre WHERE id_livre = ?', [bookId]);
+
+        // Validate and insert new author associations
+        for (const authorId of authorIds) {
+            const [authorRows] = await connection.query('SELECT id FROM auteurs WHERE id = ?', [authorId]);
+            if (authorRows.length === 0) {
+                throw new Error(`Author with ID ${authorId} does not exist`);
+            }
+            await connection.query('INSERT INTO auteur_livre (id_auteur, id_livre) VALUES (?, ?)', [authorId, bookId]);
+        }
+
+        await connection.commit();
+        return { id: bookId, title, publicationYear };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Database query failed:', error);
+        throw error;
+    }
+};
+
+module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook };
