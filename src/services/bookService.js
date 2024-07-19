@@ -126,4 +126,33 @@ const fetchBookQuantity = async (bookId) => {
     }
 };
 
-module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity };
+const updateBookQuantity = async (bookId, newQuantity) => {
+    const connection = db.promise();
+    try {
+        await connection.beginTransaction();
+
+        // Check the number of ongoing loans for the book
+        const [loanRows] = await connection.query(`
+            SELECT COUNT(*) AS ongoing_loans 
+            FROM emprunt 
+            WHERE id_livre = ? AND date_retour IS NULL
+        `, [bookId]);
+        const ongoingLoans = loanRows[0].ongoing_loans;
+
+        if (newQuantity < ongoingLoans) {
+            throw new Error(`New quantity ${newQuantity} is less than the number of ongoing loans ${ongoingLoans}`);
+        }
+
+        // Update the book quantity
+        await connection.query('UPDATE livres SET quantite = ? WHERE id = ?', [newQuantity, bookId]);
+
+        await connection.commit();
+        return { id: bookId, newQuantity };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Database query failed:', error);
+        throw error;
+    }
+};
+
+module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity };

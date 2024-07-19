@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity  } = require('../services/bookService');
+const { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity  } = require('../services/bookService');
 
 router.get('/', async (req, res) => {
     try {
@@ -72,6 +72,20 @@ router.get('/:id/quantite', async (req, res) => {
     } catch (error) {
         console.error("Error fetching quantity:", error);
         res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
+
+router.put('/:id/quantite', async (req, res) => {
+    const bookId = req.params.id;
+    const { newQuantity } = req.body;
+    try {
+        console.log(`Updating quantity for book with ID ${bookId}...`);
+        const updatedQuantity = await updateBookQuantity(bookId, newQuantity);
+        console.log("Quantity updated:", updatedQuantity);
+        res.json(updatedQuantity);
+    } catch (error) {
+        console.error("Error updating quantity:", error);
+        res.status(400).json({ error: 'Failed to update quantity', details: error.message });
     }
 });
 
