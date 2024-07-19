@@ -6,9 +6,6 @@ DB_USER=root
 DB_NAME=mylibrarydb
 API_KEY=8f94826adab8ffebbeadb4f9e161b2dc
 
+Je n'ai pas utilisé de mdp sur ma bdd
 
-npm install express sqlite3 body-parser cors dotenv
-npm install mysql
-npm install cors
-npm install body-parser
-npm install dotenv
+Il n'y a pas la validation des modifications via ETag 
