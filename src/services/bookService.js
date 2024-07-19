@@ -1,4 +1,4 @@
-const db = require('../config/db');  // Ensure this path is correct
+const db = require('../config/db'); 
 
 const fetchBooksFromDatabase = async () => {
     try {
@@ -49,15 +49,13 @@ const createBook = async (title, publicationYear, authorIds, quantity = 1) => {
     const connection = db.promise();
     try {
         await connection.beginTransaction();
-        
-        // Insert the new book
+
         const [result] = await connection.query(
             'INSERT INTO livres (titre, annee_publication, quantite) VALUES (?, ?, ?)',
             [title, publicationYear, quantity]
         );
         const bookId = result.insertId;
 
-        // Validate and insert author associations
         for (const authorId of authorIds) {
             const [authorRows] = await connection.query('SELECT id FROM auteurs WHERE id = ?', [authorId]);
             if (authorRows.length === 0) {
@@ -79,17 +77,14 @@ const updateBook = async (bookId, title, publicationYear, authorIds) => {
     const connection = db.promise();
     try {
         await connection.beginTransaction();
-        
-        // Update the book details
+
         await connection.query(
             'UPDATE livres SET titre = ?, annee_publication = ? WHERE id = ?',
             [title, publicationYear, bookId]
         );
 
-        // Remove existing author associations
         await connection.query('DELETE FROM auteur_livre WHERE id_livre = ?', [bookId]);
 
-        // Validate and insert new author associations
         for (const authorId of authorIds) {
             const [authorRows] = await connection.query('SELECT id FROM auteurs WHERE id = ?', [authorId]);
             if (authorRows.length === 0) {
@@ -119,7 +114,7 @@ const fetchBookQuantity = async (bookId) => {
             GROUP BY livres.id, livres.quantite
         `, [bookId]);
         console.log("Quantity data received from database for book ID", bookId, ":", rows);
-        return rows.length ? rows[0] : null; // Return the first row or null if not found
+        return rows.length ? rows[0] : null; 
     } catch (error) {
         console.error('Database query failed:', error);
         throw error;
@@ -131,7 +126,6 @@ const updateBookQuantity = async (bookId, newQuantity) => {
     try {
         await connection.beginTransaction();
 
-        // Check the number of ongoing loans for the book
         const [loanRows] = await connection.query(`
             SELECT COUNT(*) AS ongoing_loans 
             FROM emprunt 
@@ -143,7 +137,6 @@ const updateBookQuantity = async (bookId, newQuantity) => {
             throw new Error(`New quantity ${newQuantity} is less than the number of ongoing loans ${ongoingLoans}`);
         }
 
-        // Update the book quantity
         await connection.query('UPDATE livres SET quantite = ? WHERE id = ?', [newQuantity, bookId]);
 
         await connection.commit();
@@ -160,7 +153,6 @@ const deleteBook = async (bookId) => {
     try {
         await connection.beginTransaction();
 
-        // Check if there are any ongoing loans for the book
         const [loanRows] = await connection.query(`
             SELECT COUNT(*) AS ongoing_loans 
             FROM emprunt 
@@ -172,10 +164,8 @@ const deleteBook = async (bookId) => {
             throw new Error(`Cannot delete book with ID ${bookId} because there are ongoing loans`);
         }
 
-        // Delete related rows in auteur_livre
         await connection.query('DELETE FROM auteur_livre WHERE id_livre = ?', [bookId]);
 
-        // Delete the book
         await connection.query('DELETE FROM livres WHERE id = ?', [bookId]);
 
         await connection.commit();

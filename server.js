@@ -10,6 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const booksRouter = require('./src/api/books');
+const loansRouter = require('./src/api/loans');
 
 const apiKeyMiddleware = (req, res, next) => {
     const apiKey = req.headers['x-api-key'] || req.headers['X-Api-Key'];
@@ -23,6 +24,7 @@ const apiKeyMiddleware = (req, res, next) => {
 
 app.use(apiKeyMiddleware);
 app.use('/api/livre', booksRouter);
+app.use('/api/emprunt', loansRouter);
 
 app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
