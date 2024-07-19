@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity  } = require('../services/bookService');
+const { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity, deleteBook } = require('../services/bookService');
 
 router.get('/', async (req, res) => {
     try {
@@ -86,6 +86,19 @@ router.put('/:id/quantite', async (req, res) => {
     } catch (error) {
         console.error("Error updating quantity:", error);
         res.status(400).json({ error: 'Failed to update quantity', details: error.message });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    const bookId = req.params.id;
+    try {
+        console.log(`Deleting book with ID ${bookId}...`);
+        const deletedBook = await deleteBook(bookId);
+        console.log("Book deleted:", deletedBook);
+        res.json(deletedBook);
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        res.status(400).json({ error: 'Failed to delete book', details: error.message });
     }
 });
 

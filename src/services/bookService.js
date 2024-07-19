@@ -155,4 +155,36 @@ const updateBookQuantity = async (bookId, newQuantity) => {
     }
 };
 
-module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity };
+const deleteBook = async (bookId) => {
+    const connection = db.promise();
+    try {
+        await connection.beginTransaction();
+
+        // Check if there are any ongoing loans for the book
+        const [loanRows] = await connection.query(`
+            SELECT COUNT(*) AS ongoing_loans 
+            FROM emprunt 
+            WHERE id_livre = ? AND date_retour IS NULL
+        `, [bookId]);
+        const ongoingLoans = loanRows[0].ongoing_loans;
+
+        if (ongoingLoans > 0) {
+            throw new Error(`Cannot delete book with ID ${bookId} because there are ongoing loans`);
+        }
+
+        // Delete related rows in auteur_livre
+        await connection.query('DELETE FROM auteur_livre WHERE id_livre = ?', [bookId]);
+
+        // Delete the book
+        await connection.query('DELETE FROM livres WHERE id = ?', [bookId]);
+
+        await connection.commit();
+        return { id: bookId };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Database query failed:', error);
+        throw error;
+    }
+};
+
+module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity, updateBookQuantity, deleteBook };
