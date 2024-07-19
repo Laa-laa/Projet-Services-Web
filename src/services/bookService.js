@@ -107,4 +107,23 @@ const updateBook = async (bookId, title, publicationYear, authorIds) => {
     }
 };
 
-module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook };
+const fetchBookQuantity = async (bookId) => {
+    try {
+        const [rows] = await db.promise().query(`
+            SELECT 
+                livres.quantite AS total_quantity, 
+                (livres.quantite - COUNT(emprunt.id)) AS available_quantity 
+            FROM livres 
+            LEFT JOIN emprunt ON livres.id = emprunt.id_livre AND emprunt.date_retour IS NULL
+            WHERE livres.id = ? 
+            GROUP BY livres.id, livres.quantite
+        `, [bookId]);
+        console.log("Quantity data received from database for book ID", bookId, ":", rows);
+        return rows.length ? rows[0] : null; // Return the first row or null if not found
+    } catch (error) {
+        console.error('Database query failed:', error);
+        throw error;
+    }
+};
+
+module.exports = { fetchBooksFromDatabase, fetchBookById, createBook, updateBook, fetchBookQuantity };
